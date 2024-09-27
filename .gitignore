@@ -2,3 +2,4 @@
 temp*.py
 temp*.ipynb
 */train_dataset_tag_video
+*/cache
