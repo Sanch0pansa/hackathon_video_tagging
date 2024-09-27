@@ -10,8 +10,10 @@ import wave
 class SpeechToTextFeatureExtractor:
     def __init__(self, embedding_model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", vosk_model_path="path/to/vosk/russian/model"):
         # Embedding model (changed to multilingual model)
-        self.tokenizer = AutoTokenizer.from_pretrained(embedding_model_name)
-        self.model = AutoModel.from_pretrained(embedding_model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            embedding_model_name, cache_dir="./cache")
+        self.model = AutoModel.from_pretrained(
+            embedding_model_name, cache_dir="./cache")
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = self.model.to(device)
 

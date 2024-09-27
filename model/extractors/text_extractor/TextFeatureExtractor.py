@@ -4,11 +4,12 @@ from transformers import BertModel, BertTokenizer
 # Model BERT text to embeddings
 
 
-class FeatureExtractor:
+class TextFeatureExtractor:
     def __init__(self, model_name='bert-base-uncased'):
-        self.tokenizer = BertTokenizer.from_pretrained(model_name)
+        self.tokenizer = BertTokenizer.from_pretrained(
+            model_name, cache_dir="./cache")
         self.model = BertModel.from_pretrained(
-            model_name, output_hidden_states=True)
+            model_name, output_hidden_states=True, cache_dir="./cache")
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = self.model.to(device)
