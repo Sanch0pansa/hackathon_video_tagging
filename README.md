@@ -1,5 +1,6 @@
 # Hack-ai oMLet team's repository
 
+
 ## Basic installation and configuration for development
 Here we create virtual environment for the project, activate it and install requirements of projects.
 
@@ -16,3 +17,5 @@ python -m venv .venv
 source ./.venv/bin/activate
 pip install -r requirements.txt
 ```
+
+# Day 1/3
