@@ -1,4 +1,5 @@
 .venv
 temp*.py
 temp*.ipynb
-*cache/*
+*/train_dataset_tag_video
+*/cache
