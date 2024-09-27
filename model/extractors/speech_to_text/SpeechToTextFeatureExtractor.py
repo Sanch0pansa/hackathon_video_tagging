@@ -8,8 +8,9 @@ import wave
 
 
 class SpeechToTextFeatureExtractor:
-    def __init__(self, embedding_model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", vosk_model_path="path/to/vosk/russian/model"):
+    def __init__(self, embedding_model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", vosk_model_path="/home/glooma/Code/Python/ML/Hakatons/hackathon_video_tagging/model/extractors/speech_to_text/vosk-model-small-ru-0.22"):
         # Embedding model (changed to multilingual model)
+
         self.tokenizer = AutoTokenizer.from_pretrained(
             embedding_model_name, cache_dir="./cache")
         self.model = AutoModel.from_pretrained(
