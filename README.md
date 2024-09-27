@@ -7,7 +7,7 @@ Here we create virtual environment for the project, activate it and install requ
 ### Windows
 ```sh
 python -m venv .venv
-./.venv/Scripts/activate
+.\.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
