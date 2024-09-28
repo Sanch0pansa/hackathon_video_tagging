@@ -1,44 +1,80 @@
 import torch.nn as nn
-import torch.nn.functional as F
-import lightning as pl
 import torch
+import torchmetrics
+import lightning as pl
+import torchmetrics.classification
 
+# MLP Model for Multi-Label Classification
 class MultiTaskClassifier(pl.LightningModule):
-    def __init__(self, input_dim=1536, num_classes=100, learning_rate=1e-3):
-        super().__init__()
-        self.fc1 = nn.Linear(input_dim, 512)
-        self.fc2 = nn.Linear(512, 256)
-        self.fc3 = nn.Linear(256, num_classes)
-        self.learning_rate = learning_rate
-        self.num_classes = num_classes
+    def __init__(self, input_dim=1536, num_classes=611, hidden_size=256, lr=1e-4):
+        super(MultiTaskClassifier, self).__init__()
+        self.lr = lr
+        
+        # Define MLP layers
+        self.model = nn.Sequential(
+            nn.Linear(input_dim, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, num_classes)
+        )
+        
+        # Loss function (Binary Cross-Entropy with Logits)
+        self.criterion = nn.BCEWithLogitsLoss()
+
+        # Metrics
+        self.train_accuracy = torchmetrics.classification.MultilabelAccuracy(num_labels=num_classes, average='micro')
+        self.train_precision = torchmetrics.classification.MultilabelPrecision(num_labels=num_classes, average='micro')
+        self.train_iou = torchmetrics.classification.MultilabelJaccardIndex(num_labels=num_classes)
+
+        self.val_accuracy = torchmetrics.classification.MultilabelAccuracy(num_labels=num_classes, average='micro')
+        self.val_precision = torchmetrics.classification.MultilabelPrecision(num_labels=num_classes, average='micro')
+        self.val_iou = torchmetrics.classification.MultilabelJaccardIndex(num_labels=num_classes)
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = torch.sigmoid(self.fc3(x))
-        return x
+        return self.model(x)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self(x)
-        loss = F.binary_cross_entropy(y_hat, y)
+        
+        # Forward pass
+        logits = self(x)
+        loss = self.criterion(logits, y)
+        
+        # Predictions (after sigmoid to get probabilities)
+        preds = torch.sigmoid(logits)
+        print(preds, y)
+        exit()
+        self.log('train_iou', self.train_iou(preds, y), prog_bar=True)
+
+        preds = (preds > 0.5).float()  # Binary predictions
+        
+        # Log loss and metrics
         self.log('train_loss', loss)
+        self.log('train_acc', self.train_accuracy(preds, y), prog_bar=True)
+        self.log('train_precision', self.train_precision(preds, y), prog_bar=True)
+        
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self(x)
-        val_loss = F.binary_cross_entropy(y_hat, y)
-        self.log('val_loss', val_loss)
-        return val_loss
-
-    def test_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self(x)
-        test_loss = F.binary_cross_entropy(y_hat, y)
-        self.log('test_loss', test_loss)
-        return test_loss
+        
+        # Forward pass
+        logits = self(x)
+        loss = self.criterion(logits, y)
+        
+        # Predictions
+        preds = torch.sigmoid(logits)
+        self.log('val_iou', self.val_iou(preds, y), prog_bar=True)
+        
+        preds = (preds > 0.5).float()
+        
+        # Log loss and metrics
+        self.log('val_loss', loss, prog_bar=True)
+        self.log('val_acc', self.val_accuracy(preds, y), prog_bar=True)
+        self.log('val_precision', self.val_precision(preds, y), prog_bar=True)
+        
+        return loss
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-        return optimizer
+        return torch.optim.Adam(self.parameters(), lr=self.lr)
