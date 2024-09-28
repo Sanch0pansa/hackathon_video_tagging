@@ -27,12 +27,14 @@ function handleFiles() {
     let button = document.createElement("button");
     let tag = document.getElementById("videos");
     let text = document.createTextNode(file_1.name);
+    
     button.addEventListener('click', function(){
         fileInput.value = '';
         file_1="";
         button.parentNode.remove();
         console.log(file_1);
     })
+
     div.classList.add('container-videos');
     button.classList.add('remove-video');
     button.type="button";
@@ -42,6 +44,10 @@ function handleFiles() {
     console.log(file_1);
        
 }
+
+let stage_1 = document.querySelector('#stage-1');
+let stage_2 = document.querySelector('#stage-2');
+let stage_3 = document.getElementById("#stage-3");
 
 async function handleSubmit(event){
     event.preventDefault();
@@ -60,8 +66,7 @@ async function handleSubmit(event){
         if(response.ok){
             let result = await response.json();
             console.log(result);
-            let stage_1 = document.querySelector('#stage-1');
-            let stage_2 = document.querySelector('#stage-2');
+            
             stage_1.style.display = 'none';
             stage_2.style.display = 'block';
             processing(result.id);
@@ -81,8 +86,10 @@ async function processing(id_video){
 
         if(response.ok){
             let ready = response.json();
-            if(ready.processing === false){
+            if(ready.processing === true){
                 console.log('Успех');
+                stage_2.style.display = 'none';
+                stage_3.style.display = 'block';
             }
             else{
                 setTimeout(() => processing(id_video), 1000)
@@ -95,3 +102,49 @@ async function processing(id_video){
 }
 myForm.addEventListener('submit', handleSubmit);
 
+function add_tags(array_tags){
+
+}
+
+let text_stage_2 = ["Подождите, видео обрабатывается",
+    "Пожалуйста, подождите",
+    "Подождите одну минуту",
+    "Ладно, не одну",
+    "Подождите ещё чуть-чуть",
+    "Ваше видео точно будет обработано",
+    "Мы почти закончили",
+    "Осталось ещё немного"];
+
+let cur_char = 0;
+let h1_stage_2 = document.getElementById("text-load");
+let number_cur_text =0;
+let direction_forward = true; 
+
+function change_text() {
+    if(direction_forward){
+        h1_stage_2.innerHTML += text_stage_2[number_cur_text][cur_char];
+        cur_char++;
+        if(cur_char== text_stage_2[number_cur_text].length){
+            direction_forward = false;
+            setTimeout(change_text, 2000);
+        }
+        else{
+            setTimeout(change_text, 100);
+        }
+    }
+    else{
+        h1_stage_2.innerHTML = h1_stage_2.innerHTML.slice(0, h1_stage_2.innerHTML.length-2);
+        cur_char--;
+        if(cur_char==0){
+            direction_forward = true;
+            number_cur_text++;
+            number_cur_text %= text_stage_2.length;
+            setTimeout(change_text, 100);
+        }
+        else{
+            setTimeout(change_text, 100);
+        }
+    }
+}
+
+change_text();
