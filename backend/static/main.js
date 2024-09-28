@@ -81,7 +81,7 @@ async function processing(id_video){
 
         if(response.ok){
             let ready = response.json();
-            if(ready.processing === false){
+            if(ready.processing === true){
                 console.log('Успех');
             }
             else{
