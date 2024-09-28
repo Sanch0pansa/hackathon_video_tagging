@@ -85,7 +85,7 @@ input{
     border-style: solid;
     border-color: #007AFF;
 
-    background-image: url(/icons/Vector.svg) ;
+    background-image: url(static/icons/Vector.svg) ;
     background-position: center;
     background-repeat: no-repeat;
     background-size: 126px;

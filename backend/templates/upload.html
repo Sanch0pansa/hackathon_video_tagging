@@ -7,13 +7,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
 </head>
 <body>
     <div id="stage-1">
         <div class="container">
             <h1>Загрузите видео-файл для обработки</h1>
-            <form action="" id="form-video">
+            <form action="/" id="form-video">
                 <input type="file" name="video" id="add-file" >
                 <label class="add-video" for="add-file"> </label>
                 <label id="videos">  </label>
@@ -25,12 +25,11 @@
         <div class="container">
             <div class="animation-container">
                 <h1>Подождите, видео обрабатывается</h1>
-                    <div class="dot-container"><div class="dot" id="dot-1"></div></div>
-                    <div class="dot-container"><div class="dot" id="dot-2"></div></div>
-                    <div class="dot-container"><div class="dot" id="dot-3"></div></div>
-                  
+                <div class="dot-container"><div class="dot" id="dot-1"></div></div>
+                <div class="dot-container"><div class="dot" id="dot-2"></div></div>
+                <div class="dot-container"><div class="dot" id="dot-3"></div></div>
             </div>
-            
+
             <div class="circle-container">
                 <div class="loader">
                     <div class="big-circle">
@@ -38,7 +37,7 @@
                     </div>
                 </div>
             </div>
-            
+
         </div>
     </div>
 
@@ -49,7 +48,6 @@
                 <div class="tag tag-1">#транспорт</div>
                 <div class="tag tag-2">#транспорт</div>
                 <div class="tag tag-3">#транспорт</div>
-              
             </div>
             <div class="legends-container">
                 <label class="legend" id="legend-tag-1">#тег_первого_уровня</label>
@@ -58,6 +56,7 @@
             </div>
         </div>
     </div>
-   <script src="main.js"></script>
+
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
 </body>
 </html>
