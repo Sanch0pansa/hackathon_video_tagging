@@ -9,20 +9,20 @@ from tqdm import tqdm
 
 
 def load_model(checkpoint_path, input_dim=1536, num_classes=None):
-    # Если количество классов не передано, загружаем его из чекпоинта
+    # If the number of classes is not provided, load it from the checkpoint
     if num_classes is None:
         checkpoint = torch.load(checkpoint_path, weights_only=True)
         num_classes = checkpoint['hyper_parameters']['num_classes']
     
-    # Загружаем модель с соответствующим количеством классов
+    # Load the model with the appropriate number of classes
     model = MultiTaskClassifier(input_dim=input_dim, num_classes=num_classes)
     checkpoint = torch.load(checkpoint_path, weights_only=True)
     model.load_state_dict(checkpoint['state_dict'])
-    model.eval()  # Переводим модель в режим инференса
+    model.eval()  # Set the model to evaluation mode
     return model
 
 def get_num_classes(categories_file):
-    # Читаем файл категорий и получаем количество уникальных категорий
+    # Read the categories file and get the number of unique categories
     categories_df = pd.read_csv(categories_file)
     categories_df['full_category'] = categories_df.apply(
         lambda row: ': '.join(filter(lambda x: str(x) != 'nan', 
@@ -33,19 +33,19 @@ def get_num_classes(categories_file):
     return len(categories_df['full_category'].unique())
 
 def predict_tags(model, tensor_path, categories_file, threshold=0.5):
-    # Загружаем тензор для видео
+    # Load the tensor for the video
     tensor = torch.load(tensor_path, weights_only=True)
-    tensor = tensor.view(tensor.shape[1])  # Убедимся, что тензор имеет нужную форму (1D)
+    tensor = tensor.view(tensor.shape[1])  # Ensure the tensor has the correct shape (1D)
     
-    # Прогоняем тензор через модель для получения предсказаний
+    # Run the tensor through the model to get predictions
     with torch.no_grad():
-        preds = model(tensor.unsqueeze(0))  # Добавляем batch размерность
+        preds = model(tensor.unsqueeze(0))  # Add batch dimension
 
-    # Преобразуем вероятности в бинарные метки (теги)
+    # Convert probabilities to binary labels (tags)
     predicted_labels = (preds > threshold).squeeze().cpu().numpy()
     
 
-    # Загружаем список категорий
+    # Load the list of categories
     categories_df = pd.read_csv(categories_file)
     categories_df['full_category'] = categories_df.apply(
         lambda row: ': '.join(filter(lambda x: str(x) != 'nan', 
@@ -54,7 +54,7 @@ def predict_tags(model, tensor_path, categories_file, threshold=0.5):
     )
     category_names = categories_df['full_category'].tolist()
 
-    # Преобразуем бинарные метки в текстовые категории
+    # Convert binary labels to textual categories
     predicted_tags = [category_names[i] for i, val in enumerate(predicted_labels) if val == 1]
 
     return predicted_tags
@@ -93,7 +93,7 @@ def extract_all(video_directory, data_table_path, output_directory):
         use_text_embeddings=True,
     )
 
-    # Iterating dataset and extracting features
+    # Iterating over dataset and extracting features
     for _, row in tqdm(dataset.iterrows(), desc="Extracting features from dataset", total=len(dataset)):
         video_id = row["video_id"]
         title = row["title"]
@@ -104,47 +104,48 @@ def extract_all(video_directory, data_table_path, output_directory):
 
 
 def inference(features_path, save_to_file):
-    checkpoint_path = MODEL_PATH  # Путь к чекпоинту модели
-    categories_file = TAGS_TABLE_PATH  # Путь к CSV с категориями
+    checkpoint_path = MODEL_PATH  # Path to model checkpoint
+    categories_file = TAGS_TABLE_PATH  # Path to CSV with categories
     
-    # Получаем количество классов из файла категорий
+    # Get the number of classes from the categories file
     num_classes = get_num_classes(categories_file)
     
-    # Загрузим обученную модель
+    # Load the trained model
     model = load_model(checkpoint_path, input_dim=MODEL_INPUT_SIZE, num_classes=num_classes)
     
-    # Прогоняем инференс и получаем текстовые теги
+    # Run inference and get textual tags
     predicted_tags = predict_tags(model, features_path, categories_file)
     
-    # Выводим результат
+    # Output the result
     print(f"Predicted tags: {predicted_tags}")
 
-    # Сохраняем результат
+    # Save the result
     if save_to_file:
         with open(save_to_file, 'w') as f:
             for tag in predicted_tags:
                 f.write(tag + '\n')
 
 def inference_all(features_dir, save_to_directory):
-    checkpoint_path = MODEL_PATH  # Путь к чекпоинту модели
-    categories_file = TAGS_TABLE_PATH  # Путь к CSV с категориями
+    checkpoint_path = MODEL_PATH  # Path to model checkpoint
+    categories_file = TAGS_TABLE_PATH  # Path to CSV with categories
 
-    # Получаем количество классов из файла категорий
+    # Get the number of classes from the categories file
     num_classes = get_num_classes(categories_file)
     
-    # Загрузим обученную модель
+    # Load the trained model
     model = load_model(checkpoint_path, input_dim=MODEL_INPUT_SIZE, num_classes=num_classes)
 
-    # Итерируемся по папке с фичами и прогоняем инференс
+    # Iterate through the feature files in the directory and run inference
     for filename in tqdm(os.listdir(features_dir)):
         if filename.endswith(".pt"):
             predicted_tags = predict_tags(model, os.path.join(features_dir, filename), categories_file)
 
-            # Сохраняем результат
+            # Save the result
             if save_to_directory:
                 with open(os.path.join(save_to_directory, os.path.basename(filename).split(".")[0] + ".txt"), 'w') as f:
                     for tag in predicted_tags:
                         f.write(tag + '\n')
+
 
 # Constants
 DEFAULT_OUTPUT_TENSOR_PATH = "output_tensor.pt"  # Default path for output tensor file
