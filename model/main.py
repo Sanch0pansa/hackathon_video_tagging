@@ -6,8 +6,26 @@ from classificators.mlp_classifier.Classificator import MultiTaskClassifier
 from classificators.mlp_classifier.DataModule import VideoDataset
 import pandas as pd
 from tqdm import tqdm
+import time
 
+def timer(process_name):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            # Начало таймера
+            start_time = time.time()
+            # Вызов декорируемой функции
+            result = func(*args, **kwargs)
+            # Окончание таймера
+            end_time = time.time()
+            # Вычисление и вывод времени выполнения
+            execution_time = end_time - start_time
+            print(f"{process_name} finished. Estimated time: {execution_time:.4f} s")
+            # Возвращаем результат выполнения функции
+            return result
+        return wrapper
+    return decorator
 
+@timer("Model loading")
 def load_model(checkpoint_path, input_dim=1536, num_classes=None):
     # If the number of classes is not provided, load it from the checkpoint
     if num_classes is None:
@@ -31,6 +49,7 @@ def get_num_classes(categories_file):
     )
     
     return len(categories_df['full_category'].unique())
+
 
 def predict_tags(model, tensor_path, categories_file, threshold=0.5):
     # Load the tensor for the video
@@ -59,6 +78,16 @@ def predict_tags(model, tensor_path, categories_file, threshold=0.5):
 
     return predicted_tags
 
+@timer("Initializing feature extractor")
+def get_extractor(*args, **kwargs):
+    return Extractor(
+        *args, **kwargs
+    )
+
+@timer("Feature extraction")
+def run_extractor(extractor, *args, **kwargs):
+    return extractor(*args, **kwargs)
+
 
 def extract(video_path, title, description, output_tensor_path):
     # Getting the output directories
@@ -67,7 +96,7 @@ def extract(video_path, title, description, output_tensor_path):
 
     # Defining extractor
     print("Defining extractor...")
-    extractor = Extractor(
+    extractor = get_extractor(
         video_directory,
         output_directory,
         use_video_embeddings=True,
@@ -75,18 +104,19 @@ def extract(video_path, title, description, output_tensor_path):
     )
 
     # Extracting features
-    data = extractor(os.path.basename(video_path).split(".")[0], title, description, save=False, show_progress=True)
+    data = run_extractor(extractor, os.path.basename(video_path).split(".")[0], title, description, save=False, show_progress=True)
 
     # Saving features
     torch.save(data, output_tensor_path)
 
 
+@timer("Directory feature extraction")
 def extract_all(video_directory, data_table_path, output_directory):
     # Reading dataset
     dataset = pd.read_csv(data_table_path)
     
     # Defining extractor
-    extractor = Extractor(
+    extractor = get_extractor(
         video_directory,
         output_directory,
         use_video_embeddings=True,
@@ -103,6 +133,7 @@ def extract_all(video_directory, data_table_path, output_directory):
             extractor(video_id, title, description, save=True, add_embeddings_dimension=False)
 
 
+@timer("Single inference")
 def inference(features_path, save_to_file):
     checkpoint_path = MODEL_PATH  # Path to model checkpoint
     categories_file = TAGS_TABLE_PATH  # Path to CSV with categories
@@ -125,6 +156,7 @@ def inference(features_path, save_to_file):
             for tag in predicted_tags:
                 f.write(tag + '\n')
 
+@timer("Directory inference")
 def inference_all(features_dir, save_to_directory):
     checkpoint_path = MODEL_PATH  # Path to model checkpoint
     categories_file = TAGS_TABLE_PATH  # Path to CSV with categories
@@ -231,7 +263,6 @@ def extract_features_dir(directory, data_table_path, output_dir, ):
     if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir)
     extract_all(directory, data_table_path, output_dir)
-    pass
 
 
 # Command 5: Run inference on a directory of feature files
@@ -250,7 +281,6 @@ def run_inference_dir(features_dir, save_dir):
     if save_dir and not os.path.exists(save_dir):
         os.makedirs(save_dir)
     inference_all(features_dir, save_dir)
-    pass
 
 
 # CLI entry point
