@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 import pandas as pd
 import os
+from tqdm import tqdm
 
 
 class VideoDataset(Dataset):
