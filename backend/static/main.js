@@ -104,6 +104,7 @@ async function processing(id_video){
 }
 myForm.addEventListener('submit', handleSubmit);
 
+let tags = document.querySelector('.tags');
 async function add_tags(id_video){
     try{
         let response = await fetch('/results/' + id_video, {
@@ -111,7 +112,36 @@ async function add_tags(id_video){
         });
         if(response.ok){
             let data = await response.json();
+
+    
             console.log(data);
+            
+            data = data.res;
+            data.forEach(element => {
+                console.log(element);
+                if(element[1] == 1){
+                    let tag_1 = document.createElement('div');
+                    tag_1.classList.add('tag');
+                    tag_1.classList.add('tag-1');
+                    tag_1.append("#" +element[0]);
+                    tags.appendChild(tag_1);
+                }
+                else if(element[1] == 2){
+                    let tag_2 = document.createElement('div');
+                    tag_2.classList.add('tag');
+                    tag_2.classList.add('tag-2');
+                    tag_2.append("#" +element[0]);
+                    tags.appendChild(tag_2);
+
+                }
+                else{
+                    let tag_3 = document.createElement('div');
+                    tag_3.classList.add('tag');
+                    tag_3.classList.add('tag-3');
+                    tag_3.append("#"+element[0]);
+                    tags.appendChild(tag_3);
+                }
+            });
 
         }
     }
