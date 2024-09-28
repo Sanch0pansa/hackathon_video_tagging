@@ -1,5 +1,8 @@
 import click
 import os
+import torch
+from extractors.Extractor import Extractor
+
 
 # Constants
 DEFAULT_OUTPUT_TENSOR_PATH = "output_tensor.pt"  # Default path for output tensor file
@@ -22,8 +25,24 @@ def extract_features(video_path, title, description, output_tensor_path):
     Options:
         output_tensor_path: Optional path to save the extracted tensor.
     """
-    # TODO: Implement feature extraction logic here
-    pass
+    # Getting the output directories
+    video_directory = os.path.dirname(video_path)
+    output_directory = os.path.dirname(output_tensor_path)
+
+    # Defining extractor
+    print("Defining extractor...")
+    extractor = Extractor(
+        video_directory,
+        output_directory,
+        use_video_embeddings=True,
+        use_text_embeddings=True,
+    )
+
+    # Extracting features
+    data = extractor(os.path.basename(video_path).split(".")[0], title, description, save=False, show_progress=True)
+
+    # Saving features
+    torch.save(data, output_tensor_path)
 
 
 # Command 2: Run inference using a feature file
@@ -39,7 +58,7 @@ def run_inference(features_path, save_to_file):
     Options:
         save-to-file: Optional path to save the tags. If not provided, tags will be printed to stdout.
     """
-    # TODO: Implement inference logic here
+    print(features_path, save_to_file)
     pass
 
 
@@ -63,7 +82,7 @@ def full_inference(video_path, title, description, output_tensor_path, save_to_f
         output-tensor-path: Path to save the extracted tensor.
         save-to-file: Optional path to save the tags.
     """
-    # TODO: Extract features and run inference
+    print(video_path, title, description, output_tensor_path, save_to_file)
     pass
 
 
@@ -82,7 +101,7 @@ def extract_features_dir(directory, output_dir):
     """
     if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    # TODO: Implement feature extraction for directory of videos
+    print(directory, output_dir)
     pass
 
 
@@ -101,7 +120,7 @@ def run_inference_dir(features_dir, save_dir):
     """
     if save_dir and not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    # TODO: Implement inference for directory of feature files
+    print(features_dir, save_dir)
     pass
 
 
