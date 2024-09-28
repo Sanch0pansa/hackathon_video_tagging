@@ -106,11 +106,8 @@ myForm.addEventListener('submit', handleSubmit);
 
 async function add_tags(id_video){
     try{
-        let response = await fetch('/results', {
+        let response = await fetch('/results/' + id_video, {
             method: 'POST',
-            body: {
-                'id': id_video
-            }
         });
         if(response.ok){
             let data = await response.json();
