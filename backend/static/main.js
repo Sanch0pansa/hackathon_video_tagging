@@ -47,7 +47,7 @@ function handleFiles() {
 
 let stage_1 = document.querySelector('#stage-1');
 let stage_2 = document.querySelector('#stage-2');
-let stage_3 = document.getElementById("#stage-3");
+let stage_3 = document.querySelector('#stage-3');
 
 async function handleSubmit(event){
     event.preventDefault();
@@ -69,6 +69,7 @@ async function handleSubmit(event){
             
             stage_1.style.display = 'none';
             stage_2.style.display = 'block';
+            change_text();
             processing(result.id);
         }
     }
@@ -85,11 +86,12 @@ async function processing(id_video){
         });
 
         if(response.ok){
-            let ready = response.json();
+            let ready = await response.json();
+            console.log(ready);
             if(ready.processing === true){
-                console.log('Успех');
                 stage_2.style.display = 'none';
                 stage_3.style.display = 'block';
+                add_tags(id_video);
             }
             else{
                 setTimeout(() => processing(id_video), 1000)
@@ -102,8 +104,23 @@ async function processing(id_video){
 }
 myForm.addEventListener('submit', handleSubmit);
 
-function add_tags(array_tags){
+async function add_tags(id_video){
+    try{
+        let response = await fetch('/results', {
+            method: 'POST',
+            body: {
+                'id': id_video
+            }
+        });
+        if(response.ok){
+            let data = await response.json();
+            console.log(data);
 
+        }
+    }
+    catch{
+
+    }
 }
 
 let text_stage_2 = ["Подождите, видео обрабатывается",
@@ -147,4 +164,4 @@ function change_text() {
     }
 }
 
-change_text();
+

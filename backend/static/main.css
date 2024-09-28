@@ -331,11 +331,11 @@ input{
     }
 }
 #stage-1{
-    display: none;
+    display: block;
 }
 
 #stage-2{
-    display: block;
+    display: none;
 }
 
 #stage-3{
