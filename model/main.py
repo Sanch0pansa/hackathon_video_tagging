@@ -5,6 +5,7 @@ from extractors.Extractor import Extractor
 from classificators.mlp_classifier.Classificator import MultiTaskClassifier
 from classificators.mlp_classifier.DataModule import VideoDataset
 import pandas as pd
+import tqdm
 
 
 def load_model(checkpoint_path, input_dim=1536, num_classes=None):
@@ -59,6 +60,49 @@ def predict_tags(model, tensor_path, categories_file, threshold=0.5):
     return predicted_tags
 
 
+def extract(video_path, title, description, output_tensor_path):
+    # Getting the output directories
+    video_directory = os.path.dirname(video_path)
+    output_directory = os.path.dirname(output_tensor_path)
+
+    # Defining extractor
+    print("Defining extractor...")
+    extractor = Extractor(
+        video_directory,
+        output_directory,
+        use_video_embeddings=True,
+        use_text_embeddings=True,
+    )
+
+    # Extracting features
+    data = extractor(os.path.basename(video_path).split(".")[0], title, description, save=False, show_progress=True)
+
+    # Saving features
+    torch.save(data, output_tensor_path)
+
+
+def inference(features_path, save_to_file):
+    checkpoint_path = MODEL_PATH  # Путь к чекпоинту модели
+    categories_file = TAGS_TABLE_PATH  # Путь к CSV с категориями
+    
+    # Получаем количество классов из файла категорий
+    num_classes = get_num_classes(categories_file)
+    
+    # Загрузим обученную модель
+    model = load_model(checkpoint_path, input_dim=1536, num_classes=num_classes)
+    
+    # Прогоняем инференс и получаем текстовые теги
+    predicted_tags = predict_tags(model, features_path, categories_file)
+    
+    # Выводим результат
+    print(f"Predicted tags: {predicted_tags}")
+
+    # Сохраняем результат
+    if save_to_file:
+        with open(save_to_file, 'w') as f:
+            for tag in predicted_tags:
+                f.write(tag + '\n')
+
 # Constants
 DEFAULT_OUTPUT_TENSOR_PATH = "output_tensor.pt"  # Default path for output tensor file
 DEFAULT_TAGS_OUTPUT_PATH = "tags_output.txt"     # Default path for inference tags output
@@ -82,24 +126,7 @@ def extract_features(video_path, title, description, output_tensor_path):
     Options:
         output_tensor_path: Optional path to save the extracted tensor.
     """
-    # Getting the output directories
-    video_directory = os.path.dirname(video_path)
-    output_directory = os.path.dirname(output_tensor_path)
-
-    # Defining extractor
-    print("Defining extractor...")
-    extractor = Extractor(
-        video_directory,
-        output_directory,
-        use_video_embeddings=True,
-        use_text_embeddings=True,
-    )
-
-    # Extracting features
-    data = extractor(os.path.basename(video_path).split(".")[0], title, description, save=False, show_progress=True)
-
-    # Saving features
-    torch.save(data, output_tensor_path)
+    extract(video_path, title, description, output_tensor_path)
 
 
 # Command 2: Run inference using a feature file
@@ -115,26 +142,7 @@ def run_inference(features_path, save_to_file):
     Options:
         save-to-file: Optional path to save the tags. If not provided, tags will be printed to stdout.
     """
-    checkpoint_path = MODEL_PATH  # Путь к чекпоинту модели
-    categories_file = TAGS_TABLE_PATH  # Путь к CSV с категориями
-    
-    # Получаем количество классов из файла категорий
-    num_classes = get_num_classes(categories_file)
-    
-    # Загрузим обученную модель
-    model = load_model(checkpoint_path, input_dim=1536, num_classes=num_classes)
-    
-    # Прогоняем инференс и получаем текстовые теги
-    predicted_tags = predict_tags(model, features_path, categories_file)
-    
-    # Выводим результат
-    print(f"Predicted tags: {predicted_tags}")
-
-    # Сохраняем результат
-    if save_to_file:
-        with open(save_to_file, 'w') as f:
-            for tag in predicted_tags:
-                f.write(tag + '\n')
+    inference(features_path, save_to_file)
 
 
 # Command 3: Full inference (combine feature extraction and inference)
@@ -157,8 +165,8 @@ def full_inference(video_path, title, description, output_tensor_path, save_to_f
         output-tensor-path: Path to save the extracted tensor.
         save-to-file: Optional path to save the tags.
     """
-    print(video_path, title, description, output_tensor_path, save_to_file)
-    pass
+    extract(video_path, title, description, output_tensor_path)
+    inference(output_tensor_path, save_to_file)
 
 
 # Command 4: Extract features from a directory of video files
