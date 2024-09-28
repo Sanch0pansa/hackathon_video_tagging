@@ -25,10 +25,15 @@ class VideoDataset(Dataset):
 
         # Объединяем все уровни категорий
         self.categories_df['full_category'] = self.categories_df.apply(
-            lambda row: ': '.join(filter(lambda x: str(x) != 'nan', [row['Уровень 1 (iab)'], row['Уровень 2 (iab)'], row['Уровень 3 (iab)']])), axis=1)
+            lambda row: ': '.join(filter(lambda x: str(x) != 'nan', [row['Уровень 1 (iab)'], row['Уровень 2 (iab)'], row['Уровень 3 (iab)']])).strip().lower(), axis=1)
         self.category_to_idx = {cat: idx for idx, cat in enumerate(
             self.categories_df['full_category'])}
         self.num_classes = len(self.category_to_idx)
+
+        # Проверка иерархии тегов
+        print("Category to index mapping:")
+        for category, idx in self.category_to_idx.items():
+            print(f"{category}: {idx}")
 
     def __len__(self):
         return len(self.video_meta_df)
@@ -37,6 +42,7 @@ class VideoDataset(Dataset):
         video_info = self.video_meta_df.iloc[idx]
         video_id = video_info['video_id']
         tensor_path = os.path.join(self.tensor_dir, f"{video_id}.pt")
+
         try:
             tensor = torch.load(tensor_path)
             tensor = tensor.view(tensor.shape[1])
@@ -49,16 +55,25 @@ class VideoDataset(Dataset):
         tags = video_info['tags']
 
         if isinstance(tags, str):
-            tag_list = tags.split(',')
+            tag_list = [tag.strip().lower() for tag in tags.split(',')]
             for tag in tag_list:
-                tag = tag.strip()
-                if tag in self.category_to_idx:
-                    labels[self.category_to_idx[tag]] = 1
+                # Разбиваем по уровню
+                level_parts = tag.split(':')
+                # Учитываем, что может быть 1, 2 или 3 уровня
+                if len(level_parts) == 1:
+                    full_tag = level_parts[0]
+                elif len(level_parts) == 2:
+                    full_tag = f"{level_parts[0]}: {level_parts[1]}"
+                elif len(level_parts) == 3:
+                    full_tag = f"{level_parts[0]}: {level_parts[1]}: {level_parts[2]}"
+
+                if full_tag in self.category_to_idx:
+                    labels[self.category_to_idx[full_tag]] = 1
+                else:
+                    print(f"Tag '{full_tag}' not found in category_to_idx")
         else:
             print(
                 f"Warning: tags for video_id {video_id} is not a string. Value: {tags}")
-            # Здесь вы можете добавить дополнительную обработку для нестроковых значений
-            # Например, пропустить этот элемент или использовать значение по умолчанию
 
         return tensor.numpy(), labels.numpy()
 
