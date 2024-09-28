@@ -7,7 +7,8 @@ import pandas as pd
 
 app = Flask(__name__)
 
-res = {136584:['name', [['dfghj', 1], ['rtyui', 2]]], 585: ['name', ['kjhg', 2], ['jhg', 3]]}
+
+res = {136584:['name', [['dfghj', 1], ['rtyui', 2]], False]}
 @app.route('/video', methods=['GET', 'POST'])
 def post_vid():
     if request.method == 'GET':
@@ -23,33 +24,37 @@ def post_vid():
         if file.filename == '':
             return 'No selected file', 400
 
-        # Сохраним файл временно
-        file_path = f'temp/{file.filename}'  # Путь для сохранения файла
-        file.save(file_path)  # Сохранение файла
+@app.route('/results', methods=['POST'])
+def res_vid():
+    file = request.files['file']
+    # Сохраним файл временно
+    file_path = f'temp/{file.filename}'  # Путь для сохранения файла
+    file.save(file_path)  # Сохранение файла
 
-        #ПОТОК ОБРАБОТКИ ВИДЕО
-        finish_li = Event()
-        manager = Manager()#для работы со списком
-        tegs = manager.list() #теги на выходе
-        p = Process(target=f, args=(file_path, tegs, finish_li))
-        p.start()
-        finish_li.is_set()#Щас false
-        p.join()
-        finish_li.is_set()#Щас true
+    id = random.randint(1, 1000000) #генерим айди
+    while (id in res):
+        id = random.randint(1, 1000000)
+    res[id] = ['', '', False]
+    #ПОТОК ОБРАБОТКИ ВИДЕО
+    manager = Manager()  # для работы со списком
+    tegs = manager.list() #теги на выходе
+    finish_li = Event()
+    p = Process(target=f, args=(file_path, tegs, finish_li))
+    p.start()
+    #finish_li.is_set()#Щас false
+    p.join()
+    #finish_li.is_set()#Щас true
 
+    name = file.filename #имя видоса
 
-        name = file.filename #имя видоса
-        id = random.randint(1, 1000000) #генерим айди
-        while (id in res):
-            id = random.randint(1, 1000000)
+    #Определение уровня тега
+    level = level_teg(tegs) #на выход список списков
+    res[id] = [name, level, True]
 
-
-        #Определение уровня тега
-        level = level_teg(tegs) #на выход список списков
-        res[id] = [name, level]
-
-        #есть список тегов с видоса
-        return jsonify(({'tegs' : res})), 201
+    #есть список тегов с видоса
+    print(id)
+    print(res)
+    return jsonify(({'tegs' : res})), 201
 
 
 #УРОВНИ ТЕГОВ
@@ -73,6 +78,15 @@ def f(file_path, tegs, finish_li):
     tags = ['Автомобили класса люкс', 'Карьера', 'Домашние задания', 'Головоломки']
     tegs.extend(tags)
     finish_li.set()
+
+
+@app.route('/is_processing/<int:id>', methods=['GET'])
+def get_status(id):
+    if not res[id]:
+        return jsonify({'error': 'Invalid ID'}), 404
+    res[id][2] = True
+    processing_status = res[id][2]  # Получаем статус обработки
+    return jsonify({'processing': processing_status}), 200  # Возвращаем статус в виде JSON
 
 if __name__ == '__main__':
     app.run(debug=True)
