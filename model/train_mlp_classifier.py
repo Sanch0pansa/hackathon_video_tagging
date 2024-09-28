@@ -17,7 +17,7 @@ def train_model(video_meta_file, categories_file, tensor_dir, batch_size=32, max
         tensor_dir=tensor_dir,
         batch_size=batch_size,
         num_workers=num_workers,
-        train_val_test_split=(0.8, 0.1, 0.1)
+        train_val_test_split=(0.8, 0.2, 0.0)
     )
     
     data_module.setup()
@@ -62,6 +62,6 @@ if __name__ == "__main__":
         video_meta_file="./train_dataset_tag_video/baseline/train_data_categories.csv",
         categories_file="./train_dataset_tag_video/baseline/IAB_tags.csv",
         tensor_dir="./embeddings_1536",
-        batch_size=32,
-        max_epochs=10
+        batch_size=16,
+        max_epochs=20
     )
