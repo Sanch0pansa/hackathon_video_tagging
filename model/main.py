@@ -2,11 +2,68 @@ import click
 import os
 import torch
 from extractors.Extractor import Extractor
+from classificators.mlp_classifier.Classificator import MultiTaskClassifier
+from classificators.mlp_classifier.DataModule import VideoDataset
+import pandas as pd
+
+
+def load_model(checkpoint_path, input_dim=1536, num_classes=None):
+    # Если количество классов не передано, загружаем его из чекпоинта
+    if num_classes is None:
+        checkpoint = torch.load(checkpoint_path, weights_only=True)
+        num_classes = checkpoint['hyper_parameters']['num_classes']
+    
+    # Загружаем модель с соответствующим количеством классов
+    model = MultiTaskClassifier(input_dim=input_dim, num_classes=num_classes)
+    checkpoint = torch.load(checkpoint_path, weights_only=True)
+    model.load_state_dict(checkpoint['state_dict'])
+    model.eval()  # Переводим модель в режим инференса
+    return model
+
+def get_num_classes(categories_file):
+    # Читаем файл категорий и получаем количество уникальных категорий
+    categories_df = pd.read_csv(categories_file)
+    categories_df['full_category'] = categories_df.apply(
+        lambda row: ': '.join(filter(lambda x: str(x) != 'nan', 
+                                     [row['Уровень 1 (iab)'], row['Уровень 2 (iab)'], row['Уровень 3 (iab)']])), 
+        axis=1
+    )
+    
+    return len(categories_df['full_category'].unique())
+
+def predict_tags(model, tensor_path, categories_file, threshold=0.5):
+    # Загружаем тензор для видео
+    tensor = torch.load(tensor_path, weights_only=True)
+    tensor = tensor.view(tensor.shape[1])  # Убедимся, что тензор имеет нужную форму (1D)
+    
+    # Прогоняем тензор через модель для получения предсказаний
+    with torch.no_grad():
+        preds = model(tensor.unsqueeze(0))  # Добавляем batch размерность
+
+    # Преобразуем вероятности в бинарные метки (теги)
+    predicted_labels = (preds > threshold).squeeze().cpu().numpy()
+    
+
+    # Загружаем список категорий
+    categories_df = pd.read_csv(categories_file)
+    categories_df['full_category'] = categories_df.apply(
+        lambda row: ': '.join(filter(lambda x: str(x) != 'nan', 
+                                     [row['Уровень 1 (iab)'], row['Уровень 2 (iab)'], row['Уровень 3 (iab)']])), 
+        axis=1
+    )
+    category_names = categories_df['full_category'].tolist()
+
+    # Преобразуем бинарные метки в текстовые категории
+    predicted_tags = [category_names[i] for i, val in enumerate(predicted_labels) if val == 1]
+
+    return predicted_tags
 
 
 # Constants
 DEFAULT_OUTPUT_TENSOR_PATH = "output_tensor.pt"  # Default path for output tensor file
 DEFAULT_TAGS_OUTPUT_PATH = "tags_output.txt"     # Default path for inference tags output
+MODEL_PATH = "./checkpoints/final_model.ckpt"    # Path to the trained model
+TAGS_TABLE_PATH = "./config/tags.csv"            # Path to the tags table
 
 # Command 1: Extract features from a single video
 @click.command(name="extract-features")
@@ -58,8 +115,26 @@ def run_inference(features_path, save_to_file):
     Options:
         save-to-file: Optional path to save the tags. If not provided, tags will be printed to stdout.
     """
-    print(features_path, save_to_file)
-    pass
+    checkpoint_path = MODEL_PATH  # Путь к чекпоинту модели
+    categories_file = TAGS_TABLE_PATH  # Путь к CSV с категориями
+    
+    # Получаем количество классов из файла категорий
+    num_classes = get_num_classes(categories_file)
+    
+    # Загрузим обученную модель
+    model = load_model(checkpoint_path, input_dim=1536, num_classes=num_classes)
+    
+    # Прогоняем инференс и получаем текстовые теги
+    predicted_tags = predict_tags(model, features_path, categories_file)
+    
+    # Выводим результат
+    print(f"Predicted tags: {predicted_tags}")
+
+    # Сохраняем результат
+    if save_to_file:
+        with open(save_to_file, 'w') as f:
+            for tag in predicted_tags:
+                f.write(tag + '\n')
 
 
 # Command 3: Full inference (combine feature extraction and inference)
