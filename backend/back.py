@@ -38,10 +38,9 @@ def post_vid():
         # Проверяем допустимость файла
         if not allowed_file(file.filename):
             return 'Unsupported file type', 400
+        res = None
         # Генерируем уникальный ID
         id = random.randint(1, 1000000)
-        while id in res:
-            id = random.randint(1, 1000000)
         # Безопасное имя файла
         name = secure_filename(file.filename)
         # Добавляем запись в res
@@ -64,7 +63,7 @@ def res_vid(id):
     global res
     if res is None:
         return 'Server not ready', 500
-    return jsonify({'tegs': dict(res[id])}), 201  # Преобразуем Manager.dict() в обычный dict для JSON-сериализации
+    return jsonify({'res': dict(res[id][2])}), 201  # Преобразуем Manager.dict() в обычный dict для JSON-сериализации
 
 
 @app.route('/is_processing/<int:id>', methods=['GET'])
@@ -74,8 +73,6 @@ def get_status(id):
         return 'Server not ready', 500
     if id not in res:
         return jsonify({'error': 'Invalid ID'}), 404
-    print('22222   ', res[id][2])
-    print(res[id])
     processing_status = res[id][2]  # Получаем статус обработки
     return jsonify({'processing': processing_status}), 201  # Возвращаем статус в виде JSON
 
@@ -112,7 +109,6 @@ def process_video(id, filename, res):
         file_path = f'temp/{filename}'
         if os.path.exists(file_path):
             os.remove(file_path)
-            print(f'Временный файл {file_path} удалён.')
     except Exception as e:
         print(f'Ошибка при обработке видео {id}: {e}')
         res[id][2] = False  # Указываем, что обработка не удалась
@@ -126,7 +122,6 @@ def main():
     # Инициализируем Manager и общий словарь res
     manager = Manager()
     res = manager.dict()
-    res[15421] = ['name', [['dfghj', 1], ['rtyui', 2]], False]
     # Запускаем Flask-приложение без режима отладки и перезагрузчика
     app.run(debug=False, use_reloader=False)
 
