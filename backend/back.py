@@ -59,12 +59,12 @@ def post_vid():
         return jsonify({'id': id}), 201
 
 
-@app.route('/results', methods=['POST'])
-def res_vid():
+@app.route('/results/<int:id>', methods=['POST'])
+def res_vid(id):
     global res
     if res is None:
         return 'Server not ready', 500
-    return jsonify({'tegs': dict(res)}), 201  # Преобразуем Manager.dict() в обычный dict для JSON-сериализации
+    return jsonify({'tegs': dict(res[id])}), 201  # Преобразуем Manager.dict() в обычный dict для JSON-сериализации
 
 
 @app.route('/is_processing/<int:id>', methods=['GET'])
