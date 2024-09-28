@@ -23,7 +23,11 @@ def post_vid():
         # Если файл не выбран
         if file.filename == '':
             return 'No selected file', 400
-        return 'File uploaded successfully', 200
+        id = random.randint(1, 1000000) #генерим айди
+        while (id in res):
+            id = random.randint(1, 1000000)
+        res[id] = ['', '', False]
+        return jsonify({'id': id}), 201
 
 @app.route('/results', methods=['POST'])
 def res_vid():
@@ -37,11 +41,6 @@ def res_vid():
         # Сохраним файл временно
         file_path = f'temp/{file.filename}'  # Путь для сохранения файла
         file.save(file_path)  # Сохранение файла
-
-        id = random.randint(1, 1000000) #генерим айди
-        while (id in res):
-            id = random.randint(1, 1000000)
-        res[id] = ['', '', False]
         #ПРОЦЕКСС ОБРАБОТКИ ВИДЕО
         manager = Manager()  # для работы со списком
         tegs = manager.list() #теги на выходе
