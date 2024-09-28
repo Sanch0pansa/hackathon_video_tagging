@@ -89,4 +89,5 @@ urllib3==2.2.3
 wandb==0.18.1
 wcwidth==0.2.13
 Werkzeug==3.0.4
+xgboost==2.1.1
 yarl==1.13.0
