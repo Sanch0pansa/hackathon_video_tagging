@@ -27,34 +27,41 @@ def post_vid():
 @app.route('/results', methods=['POST'])
 def res_vid():
     file = request.files['file']
-    # Сохраним файл временно
-    file_path = f'temp/{file.filename}'  # Путь для сохранения файла
-    file.save(file_path)  # Сохранение файла
+    flagg = True
+    for key in res:
+        if res[key][0] == file.filename:
+            flagg = False
+            break
+    if flagg:
+        # Сохраним файл временно
+        file_path = f'temp/{file.filename}'  # Путь для сохранения файла
+        file.save(file_path)  # Сохранение файла
 
-    id = random.randint(1, 1000000) #генерим айди
-    while (id in res):
-        id = random.randint(1, 1000000)
-    res[id] = ['', '', False]
-    #ПОТОК ОБРАБОТКИ ВИДЕО
-    manager = Manager()  # для работы со списком
-    tegs = manager.list() #теги на выходе
-    finish_li = Event()
-    p = Process(target=f, args=(file_path, tegs, finish_li))
-    p.start()
-    #finish_li.is_set()#Щас false
-    p.join()
-    #finish_li.is_set()#Щас true
+        id = random.randint(1, 1000000) #генерим айди
+        while (id in res):
+            id = random.randint(1, 1000000)
+        res[id] = ['', '', False]
+        #ПОТОК ОБРАБОТКИ ВИДЕО
+        manager = Manager()  # для работы со списком
+        tegs = manager.list() #теги на выходе
+        finish_li = Event()
+        p = Process(target=f, args=(file_path, tegs, finish_li))
+        p.start()
+        #finish_li.is_set()#Щас false
+        p.join()
+        #finish_li.is_set()#Щас true
 
-    name = file.filename #имя видоса
+        name = file.filename #имя видоса
 
-    #Определение уровня тега
-    level = level_teg(tegs) #на выход список списков
-    res[id] = [name, level, True]
+        #Определение уровня тега
+        level = level_teg(tegs) #на выход список списков
+        res[id] = [name, level, True]
 
-    #есть список тегов с видоса
-    print(id)
-    print(res)
-    return jsonify(({'tegs' : res})), 201
+        #есть список тегов с видоса
+        print(id)
+        print(res)
+        return jsonify(({'tegs' : res})), 201
+    return jsonify({'error': 'File already exists'}), 400
 
 
 #УРОВНИ ТЕГОВ
