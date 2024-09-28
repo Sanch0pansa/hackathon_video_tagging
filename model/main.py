@@ -5,7 +5,7 @@ from extractors.Extractor import Extractor
 from classificators.mlp_classifier.Classificator import MultiTaskClassifier
 from classificators.mlp_classifier.DataModule import VideoDataset
 import pandas as pd
-import tqdm
+from tqdm import tqdm
 
 
 def load_model(checkpoint_path, input_dim=1536, num_classes=None):
@@ -81,6 +81,28 @@ def extract(video_path, title, description, output_tensor_path):
     torch.save(data, output_tensor_path)
 
 
+def extract_all(video_directory, data_table_path, output_directory):
+    # Reading dataset
+    dataset = pd.read_csv(data_table_path)
+    
+    # Defining extractor
+    extractor = Extractor(
+        video_directory,
+        output_directory,
+        use_video_embeddings=True,
+        use_text_embeddings=True,
+    )
+
+    # Iterating dataset and extracting features
+    for _, row in tqdm(dataset.iterrows(), desc="Extracting features from dataset", total=len(dataset)):
+        video_id = row["video_id"]
+        title = row["title"]
+        description = row["description"]
+
+        if os.path.exists(os.path.join(video_directory, video_id + ".mp4")):
+            extractor(video_id, title, description, save=True, add_embeddings_dimension=False)
+
+
 def inference(features_path, save_to_file):
     checkpoint_path = MODEL_PATH  # Путь к чекпоинту модели
     categories_file = TAGS_TABLE_PATH  # Путь к CSV с категориями
@@ -89,7 +111,7 @@ def inference(features_path, save_to_file):
     num_classes = get_num_classes(categories_file)
     
     # Загрузим обученную модель
-    model = load_model(checkpoint_path, input_dim=1536, num_classes=num_classes)
+    model = load_model(checkpoint_path, input_dim=MODEL_INPUT_SIZE, num_classes=num_classes)
     
     # Прогоняем инференс и получаем текстовые теги
     predicted_tags = predict_tags(model, features_path, categories_file)
@@ -103,10 +125,32 @@ def inference(features_path, save_to_file):
             for tag in predicted_tags:
                 f.write(tag + '\n')
 
+def inference_all(features_dir, save_to_directory):
+    checkpoint_path = MODEL_PATH  # Путь к чекпоинту модели
+    categories_file = TAGS_TABLE_PATH  # Путь к CSV с категориями
+
+    # Получаем количество классов из файла категорий
+    num_classes = get_num_classes(categories_file)
+    
+    # Загрузим обученную модель
+    model = load_model(checkpoint_path, input_dim=MODEL_INPUT_SIZE, num_classes=num_classes)
+
+    # Итерируемся по папке с фичами и прогоняем инференс
+    for filename in tqdm(os.listdir(features_dir)):
+        if filename.endswith(".pt"):
+            predicted_tags = predict_tags(model, os.path.join(features_dir, filename), categories_file)
+
+            # Сохраняем результат
+            if save_to_directory:
+                with open(os.path.join(save_to_directory, os.path.basename(filename).split(".")[0] + ".txt"), 'w') as f:
+                    for tag in predicted_tags:
+                        f.write(tag + '\n')
+
 # Constants
 DEFAULT_OUTPUT_TENSOR_PATH = "output_tensor.pt"  # Default path for output tensor file
 DEFAULT_TAGS_OUTPUT_PATH = "tags_output.txt"     # Default path for inference tags output
 MODEL_PATH = "./checkpoints/final_model.ckpt"    # Path to the trained model
+MODEL_INPUT_SIZE = 1536                          # Input size of the model
 TAGS_TABLE_PATH = "./config/tags.csv"            # Path to the tags table
 
 # Command 1: Extract features from a single video
@@ -172,9 +216,10 @@ def full_inference(video_path, title, description, output_tensor_path, save_to_f
 # Command 4: Extract features from a directory of video files
 @click.command(name="extract-features-dir")
 @click.argument('directory', type=click.Path(exists=True, file_okay=False))
+@click.argument('data_table_path', type=click.Path(exists=True, dir_okay=False))
 @click.option('--output-dir', '-o', type=click.Path(), default=None,
               help="Directory to save the output tensors. If not provided, saves to the current directory.")
-def extract_features_dir(directory, output_dir):
+def extract_features_dir(directory, data_table_path, output_dir, ):
     """
     Extract features from all video files in a directory.
     Arguments:
@@ -184,7 +229,7 @@ def extract_features_dir(directory, output_dir):
     """
     if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    print(directory, output_dir)
+    extract_all(directory, data_table_path, output_dir)
     pass
 
 
@@ -203,7 +248,7 @@ def run_inference_dir(features_dir, save_dir):
     """
     if save_dir and not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    print(features_dir, save_dir)
+    inference_all(features_dir, save_dir)
     pass
 
 

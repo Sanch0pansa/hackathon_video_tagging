@@ -24,7 +24,7 @@ class Extractor:
         if use_text_embeddings:
             self.text_extractor = TextFeatureExtractor()
     
-    def __call__(self, video_id, title, description, save=True, show_progress=False):
+    def __call__(self, video_id, title, description, save=True, show_progress=False, add_embeddings_dimension=True):
         
         if show_progress:
             pbar = tqdm(total=(
@@ -61,8 +61,8 @@ class Extractor:
             if show_progress:
                 pbar.set_description("Saving embeddings")
             dimension = embeddings.shape[1]
-            os.makedirs(self.path_to_output_folder + "_" + str(dimension), exist_ok=True)
-            output_file = os.path.join(self.path_to_output_folder + "_" + str(dimension), video_id + ".pt")
+            os.makedirs(self.path_to_output_folder + ("_" + str(dimension) if add_embeddings_dimension else ""), exist_ok=True)
+            output_file = os.path.join(self.path_to_output_folder + ("_" + str(dimension) if add_embeddings_dimension else ""), video_id + ".pt")
             torch.save(embeddings, output_file)
             if show_progress:
                 pbar.update(1)
