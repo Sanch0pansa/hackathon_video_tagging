@@ -55,7 +55,8 @@ def res_vid():
 
         #Определение уровня тега
         level = level_teg(tegs) #на выход список списков
-        res[id] = [name, level, True]
+        res[id][0] = name
+        res[id][1] = level
 
         #есть список тегов с видоса
         print(id)
@@ -85,6 +86,7 @@ def f(file_path, tegs, finish_li):
     tags = ['Автомобили класса люкс', 'Карьера', 'Домашние задания', 'Головоломки']
     tegs.extend(tags)
     finish_li.set()
+    res[id][2] = True
 
 
 @app.route('/is_processing/<int:id>', methods=['GET'])
