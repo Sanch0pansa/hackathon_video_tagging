@@ -26,8 +26,16 @@ class VideoDataset(Dataset):
             lambda row: ': '.join(filter(lambda x: str(x) != 'nan', [row['Уровень 1 (iab)'], row['Уровень 2 (iab)'], row['Уровень 3 (iab)']])),
             axis=1
         )
+
+        self.categories_df['level2'] = self.categories_df.apply(
+            lambda row: ': '.join(filter(lambda x: str(x) != 'nan', [row['Уровень 1 (iab)'], row['Уровень 2 (iab)']])),
+            axis=1
+        )
         self.category_to_idx = {cat: idx for idx, cat in enumerate(self.categories_df['full_category'])}
-        self.num_classes = len(self.category_to_idx)
+        self.category_to_idx1 = {cat: idx for idx, cat in enumerate(self.categories_df['Уровень 1 (iab)'])}
+        self.category_to_idx2 = {cat: idx for idx, cat in enumerate(self.category_to_idx1)}
+
+        self.num_classes = len(self.category_to_idx2-1)
 
     def __len__(self):
         return len(self.video_meta_df)
@@ -39,15 +47,28 @@ class VideoDataset(Dataset):
         tensor = torch.load(tensor_path, weights_only=True)
         tensor = tensor.view(tensor.shape[1])
 
+
         # Размечаем метки для мультиклассовой классификации
         tags = (str(video_info['tags']) if str(video_info['tags']) != "nan" else "").split(', ')
         labels = torch.zeros(self.num_classes)
         for tag in tags:
             tag = tag.strip()
-            if tag in self.category_to_idx:
-                labels[self.category_to_idx[tag]] = 1
-        
+            if tag in self.category_to_idx2:
+                labels[self.category_to_idx2[tag]] = 1
+        # big_labels = torch.zeros(self.category_to_idx)
+        # for i in range(1, labels):
+        #     if labels[i]:
+        #         tag = self.category_to_idx2[i]
+        #         big_labels[self.category_to_idx1[i-1:i]] = 1
         return tensor, labels
+    
+    def get_big_labels(self, labels):
+        big_labels = torch.zeros(self.category_to_idx)
+        for i in range(1, labels):
+            if labels[i]:
+                tag = self.category_to_idx2[i]
+                big_labels[self.category_to_idx1[i-1:i]] = 1
+        return big_labels
 
 class VideoDataModule(pl.LightningDataModule):
     def __init__(self, video_meta_file, categories_file, tensor_dir, batch_size=32, num_workers=4, train_val_test_split=(0.7, 0.15, 0.15)):
