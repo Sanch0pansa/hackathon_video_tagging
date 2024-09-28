@@ -38,7 +38,6 @@ def post_vid():
         # Проверяем допустимость файла
         if not allowed_file(file.filename):
             return 'Unsupported file type', 400
-        res = None
         # Генерируем уникальный ID
         id = random.randint(1, 1000000)
         # Безопасное имя файла
