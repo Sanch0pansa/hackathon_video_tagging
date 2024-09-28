@@ -41,7 +41,7 @@ def res_vid():
         while (id in res):
             id = random.randint(1, 1000000)
         res[id] = ['', '', False]
-        #ПОТОК ОБРАБОТКИ ВИДЕО
+        #ПРОЦЕКСС ОБРАБОТКИ ВИДЕО
         manager = Manager()  # для работы со списком
         tegs = manager.list() #теги на выходе
         finish_li = Event()
