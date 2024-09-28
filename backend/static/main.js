@@ -19,41 +19,38 @@ button.addEventListener('mouseleave', function() {
 
 fileInput.addEventListener("change", handleFiles);
 
-let files = [];
+let file_1;
 function handleFiles() {
 
-    const fileList = this.files;
-    Array.from(fileList).forEach(element => {
-        files.push(element);
-        let div = document.createElement("div");
-        let button = document.createElement("button");
-        
-        let tag = document.getElementById("videos");
-        let text = document.createTextNode(element.name);
-        button.dataset.file = files.length - 1;
-        button.addEventListener('click', function(){
-            
-            files.splice(this.dataset.file, 1);
-            button.parentNode.remove();
-        })
-        div.classList.add('container-videos');
-        button.classList.add('remove-video');
-        button.type="button";
-        div.appendChild(text);
-        div.appendChild(button);
-        tag.appendChild(div);
-    });   
+    file_1 = this.files[0];
+    let div = document.createElement("div");
+    let button = document.createElement("button");
+    let tag = document.getElementById("videos");
+    let text = document.createTextNode(file_1.name);
+    button.addEventListener('click', function(){
+        fileInput.value = '';
+        file_1="";
+        button.parentNode.remove();
+        console.log(file_1);
+    })
+    div.classList.add('container-videos');
+    button.classList.add('remove-video');
+    button.type="button";
+    div.appendChild(text);
+    div.appendChild(button);
+    tag.appendChild(div);
+    console.log(file_1);
+       
 }
 
 function handleSubmit(event){
     event.preventDefault();
     const data = new FormData();
 
-    for(const file of files){
-        data.append('files[]', file, file.name);
-    }
 
-    return fetch('/', {
+    data.append('file', file_1, file_1.name);
+
+    return fetch('/video', {
         method: 'POST',
         body: data,
     });

@@ -85,7 +85,7 @@ input{
     border-style: solid;
     border-color: #007AFF;
 
-    background-image: url(static/icons/Vector.svg) ;
+    background-image: url(icons/Vector.svg) ;
     background-position: center;
     background-repeat: no-repeat;
     background-size: 126px;
@@ -124,7 +124,7 @@ input{
 .remove-video{
     width: 18px;
     height: 18px;
-    background-image: url(/icons/close_21dp_EA3323_FILL0_wght400_GRAD0_opsz20.svg);
+    background-image: url(icons/close_21dp_EA3323_FILL0_wght400_GRAD0_opsz20.svg);
     background-position: center;
     background-repeat: no-repeat;
     background-size: 18px;
