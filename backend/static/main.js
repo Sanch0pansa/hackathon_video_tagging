@@ -113,7 +113,7 @@ async function add_tags(id_video) {
         if (response.ok) {
             let data = await response.json();
             console.log(data);
-            data = data.res;
+            data = data.results;
             data.forEach(element => {
                 let tag = document.createElement('div');
                 tag.classList.add('tag', 'tag-' + element[1]);
