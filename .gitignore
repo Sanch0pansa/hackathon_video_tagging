@@ -8,3 +8,4 @@ temp*.ipynb
 *.DS_Store
 */wandb
 */Video-tagging
+*/lightning_logs
