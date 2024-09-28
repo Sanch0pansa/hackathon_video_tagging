@@ -7,12 +7,12 @@ import os
 def load_model(checkpoint_path, input_dim=1536, num_classes=None):
     # Если количество классов не передано, загружаем его из чекпоинта
     if num_classes is None:
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=True)
         num_classes = checkpoint['hyper_parameters']['num_classes']
     
     # Загружаем модель с соответствующим количеством классов
     model = MultiTaskClassifier(input_dim=input_dim, num_classes=num_classes)
-    checkpoint = torch.load(checkpoint_path)
+    checkpoint = torch.load(checkpoint_path, weights_only=True)
     model.load_state_dict(checkpoint['state_dict'])
     model.eval()  # Переводим модель в режим инференса
     return model
