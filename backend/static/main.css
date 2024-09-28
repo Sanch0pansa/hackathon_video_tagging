@@ -21,6 +21,7 @@ body{
     align-items: center;
 }
 
+
 .animation-container{
     display: flex;
     justify-content: space-between;
@@ -28,6 +29,8 @@ body{
     gap: 3px;
 
 }
+
+
 .dot-container{
     margin-top: -5px;
     width: 0.24em;
@@ -62,6 +65,7 @@ h1{
     font-size: 30px;
     margin: 0;
     font-weight: 400;
+    height:  36.6px;
 }
 form{
     display: flex;
@@ -327,11 +331,11 @@ input{
     }
 }
 #stage-1{
-    display: block;
+    display: none;
 }
 
 #stage-2{
-    display: none;
+    display: block;
 }
 
 #stage-3{
