@@ -64,18 +64,10 @@ def res_vid(id):
         return 'Server not ready', 500
 
     # Для отладки
-    print(res[id][2])
+    print(res[id][1])
 
     # Проверяем тип res[id][2]
-    if isinstance(res[id][2], dict):
-        return jsonify({'res': dict(res[id][2])}), 201
-    elif isinstance(res[id][2], bool):
-        return jsonify({'status': res[id][2]}), 200
-    else:
-        return jsonify({'error': 'Expected a dictionary or boolean but got a {}'.format(type(res[id][2]))}), 400
-
-    # Если все условия не выполнены (хотя это маловероятно), добавим явный возврат
-    return jsonify({'error': 'Unexpected error occurred'}), 500
+    return jsonify({'res': res[id][1]}), 201
 
 @app.route('/is_processing/<int:id>', methods=['GET'])
 def get_status(id):
