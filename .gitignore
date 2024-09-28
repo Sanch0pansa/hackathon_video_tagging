@@ -1,1 +1,11 @@
 .venv
+temp*.py
+temp*.ipynb
+*/train_dataset_tag_video
+*/cache
+**/__pycache__/
+**/cache/
+*.DS_Store
+*/wandb
+*/Video-tagging
+*/lightning_logs
