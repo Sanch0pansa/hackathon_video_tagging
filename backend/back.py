@@ -23,6 +23,7 @@ def post_vid():
         # Если файл не выбран
         if file.filename == '':
             return 'No selected file', 400
+        return 'File uploaded successfully', 200
 
 @app.route('/results', methods=['POST'])
 def res_vid():
