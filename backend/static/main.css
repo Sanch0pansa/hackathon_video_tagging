@@ -184,6 +184,7 @@ input{
     flex-direction: row;
     gap:20px;
     flex-wrap: wrap;
+    justify-content: center;
 
 }
 .tag{
@@ -218,7 +219,8 @@ input{
     
     display: flex;
     flex-direction: column;
-    gap:20px;
+    gap:17px;
+    align-items: center;
 
 }
 
