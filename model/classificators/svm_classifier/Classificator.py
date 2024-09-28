@@ -151,10 +151,8 @@ class MultiTaskLinearSVC(pl.LightningModule):
             valid_indices = [
                 idx for idx in self.labels_to_exclude if idx < y.shape[1]]
             if valid_indices:
-                print(f"Valid indices for deletion: {valid_indices}")
+                # print(f"Valid indices for deletion: {valid_indices}")
                 y = np.delete(y, valid_indices, axis=1)
-            else:
-                print("No valid indices for deletion.")
 
         # Сохраняем выходные данные для дальнейшей обработки
         self.test_outputs.append((y, y_hat))
@@ -162,8 +160,7 @@ class MultiTaskLinearSVC(pl.LightningModule):
         # Log metrics to wandb
         wandb.log({"test_samples": len(x)})
 
-        print(
-            f"Test - Samples: {len(x)}")
+        # print(f"Test - Samples: {len(x)}")
 
     def on_test_epoch_end(self):
         # Обработка всех выходных данных после завершения тестовой эпохи
@@ -172,7 +169,7 @@ class MultiTaskLinearSVC(pl.LightningModule):
 
         # Calculate IoU-like accuracy
         iou_accuracy = self.calculate_iou_accuracy(y_true, y_pred)
-        print(f"Test - IoU-like Accuracy: {iou_accuracy}")
+        print(f"\n\n\n IoU-like Accuracy: {iou_accuracy}\n\n\n")
 
         # Очищаем выходные данные после обработки
         self.test_outputs = []

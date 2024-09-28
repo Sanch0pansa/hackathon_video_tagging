@@ -17,7 +17,7 @@ def main():
 
     # Инициализируем DataModule с уменьшенной выборкой
     data_module = VideoDataModule(
-        video_meta_file, categories_file, tensor_dir, batch_size=32, sample_size=100)
+        video_meta_file, categories_file, tensor_dir, batch_size=32, sample_size=400)
 
     # Вызовем setup для инициализации dataset
     data_module.setup(stage='fit')
@@ -44,10 +44,11 @@ def main():
     trainer.test(model, datamodule=data_module)
 
     # Пример использования модели для предсказания меток для заданного video_id
-    video_id = "cf3ef0b2d6227ad372a9b7dcb6cb2df3"  # Замените на реальный video_id
-    predicted_tags = model.predict_for_video(video_id, tensor_dir)
-    if predicted_tags is not None:
-        print(f"Predicted tags for video_id {video_id}: {predicted_tags}")
+    # video_id = "cf3ef0b2d6227ad372a9b7dcb6cb2df3"  # Замените на реальный video_id
+    # predicted_tags = model.predict_for_video(video_id, tensor_dir)
+    # if predicted_tags is not None:
+    #     print(f"Predicted tags for video_id {video_id}: {predicted_tags}")
+
     # answer is: cf3ef0b2d6227ad372a9b7dcb6cb2df3,
     # Смехмашина | Выпуск 13,"Подвели итоги розыгрыша. Поздравляем счастливого обладателя новенького IPhone 13 Pro, им стал @sssr198787  Ссылки на наши каналы: Антон Протеинов - / Люди у которых клюёт - / Пацанский клининг - / Пойдём отойдём - / ПОЛУПАНОВЫ - / Тот Самый Мент - / Тяпа - / Шляпа - / Максим Народный - /  Новый выпуск «Смехмашины», в котором принимают участие Сундук, Максим и Егор. В этом выпуске участники шоу будут в роли водителей такси! Вы представляете?! Перед парнями стоит непростая задача, помимо того, что бы смешно рассказать анекдот, нужно довести пассажира до определенной точки. Кто победит в этом непростом выпуске? Вы узнаете прямо сейчас!",
     # Массовая культура: Юмор и сатира
