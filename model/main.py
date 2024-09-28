@@ -1,9 +1,9 @@
 import click
 import os
 import torch
-from extractors.Extractor import Extractor
-from classificators.mlp_classifier.Classificator import MultiTaskClassifier
-from classificators.mlp_classifier.DataModule import VideoDataset
+from model.extractors.Extractor import Extractor
+from model.classificators.mlp_classifier.Classificator import MultiTaskClassifier
+from model.classificators.mlp_classifier.DataModule import VideoDataset
 import pandas as pd
 from tqdm import tqdm
 import time
@@ -155,6 +155,8 @@ def inference(features_path, save_to_file):
         with open(save_to_file, 'w') as f:
             for tag in predicted_tags:
                 f.write(tag + '\n')
+    
+    return predicted_tags
 
 @timer("Directory inference")
 def inference_all(features_dir, save_to_directory):
@@ -182,9 +184,9 @@ def inference_all(features_dir, save_to_directory):
 # Constants
 DEFAULT_OUTPUT_TENSOR_PATH = "output_tensor.pt"  # Default path for output tensor file
 DEFAULT_TAGS_OUTPUT_PATH = "tags_output.txt"     # Default path for inference tags output
-MODEL_PATH = "./checkpoints/final_model.ckpt"    # Path to the trained model
+MODEL_PATH = "./model/checkpoints/final_model.ckpt"    # Path to the trained model
 MODEL_INPUT_SIZE = 1536                          # Input size of the model
-TAGS_TABLE_PATH = "./config/tags.csv"            # Path to the tags table
+TAGS_TABLE_PATH = "./model/config/tags.csv"            # Path to the tags table
 
 # Command 1: Extract features from a single video
 @click.command(name="extract-features")

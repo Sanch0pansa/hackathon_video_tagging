@@ -1,5 +1,5 @@
-from extractors.video_extractor.VideoFeatureExtractor import VideoFeatureExtractor
-from extractors.text_extractor.TextFeatureExtractor import TextFeatureExtractor
+from model.extractors.video_extractor.VideoFeatureExtractor import VideoFeatureExtractor
+from model.extractors.text_extractor.TextFeatureExtractor import TextFeatureExtractor
 import os
 from tqdm import tqdm
 import torch

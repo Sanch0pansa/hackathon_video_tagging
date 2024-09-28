@@ -4,6 +4,7 @@ from multiprocessing import Process, Manager, set_start_method, freeze_support
 import pandas as pd
 import os
 from werkzeug.utils import secure_filename
+from model.main import inference, extract
 
 app = Flask(__name__)
 
@@ -53,7 +54,7 @@ def upload_video():
         # Save the uploaded file temporarily
         if not os.path.exists('temp'):
             os.makedirs('temp')
-        temp_file_path = f'temp/{safe_filename}'
+        temp_file_path = f'./backend/temp/{safe_filename}'
         uploaded_file.save(temp_file_path)
 
         # Create and start a process to handle video processing
@@ -89,7 +90,7 @@ def determine_tag_levels(tags):
     """Determine the levels of tags based on a CSV file."""
     tag_levels = []
     try:
-        df = pd.read_csv('taggi.csv')
+        df = pd.read_csv('./backend/taggi.csv')
     except FileNotFoundError:
         print("File 'taggi.csv' not found.")
         return tag_levels  # Return an empty list if the file is not found
@@ -107,16 +108,27 @@ def process_video(video_id, filename, video_results):
     """Process the uploaded video in a separate process."""
     try:
         # Example of tags for processing
-        tags = ['Автомобили класса люкс', 'Карьера', 'Домашние задания', 'Головоломки', 'Конный спорт', 'Спорт', 'Автогонки', 'Гребля', 'Регби', 'Красота', 'Аксессуары', 'Языки программирования', 'Мультфильмы и анимация', 'Реалити-ТВ', 'Мобильные игры', 'Тип путешествия', 'Игры']
-        
+        extract('./backend/temp/' + filename, 'Test title', 'Test description', 'output_tensor.pt')
+        tags = inference('output_tensor.pt', None)
+        predicted_tags = set()
+
+        for tag in tags:
+            all_real_tags = tag.split(': ')
+            for real_tag in all_real_tags:
+                predicted_tags.add(real_tag)
+
+        os.remove('output_tensor.pt')
+        os.remove('tags_output.txt')
+        os.remove('./backend/temp/' + filename)
+
         # Determine levels for the tags
-        tag_levels = determine_tag_levels(tags)
+        tag_levels = determine_tag_levels(list(predicted_tags))
         
         # Update the global results dictionary
         video_results[video_id] = [filename, tag_levels, True]
         
         # Remove the temporary file after processing
-        temp_file_path = f'temp/{filename}'
+        temp_file_path = f'./backend/temp/{filename}'
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
     except Exception as e:
@@ -133,7 +145,7 @@ def main():
     manager = Manager()
     video_results = manager.dict()
     # Run the Flask application without debug mode and reloader
-    app.run(debug=False, use_reloader=False)
+    app.run(debug=True)
 
 if __name__ == "__main__":
     main()
