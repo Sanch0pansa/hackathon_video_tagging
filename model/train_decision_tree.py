@@ -13,18 +13,6 @@ import xgboost as xgb
 
 import numpy as np
 
-def iou_loss(pred, target, eps=1e-6):
-    """
-    IoU Loss Function.
-    
-    pred: предсказанная маска (содержит вероятности классов).
-    target: истинная маска (значения 0 или 1 для каждого пикселя).
-    eps: малое значение для избежания деления на ноль.
-    """
-    intersection = (pred * target).sum()
-    union = pred.sum() + target.sum() - intersection
-    return 1 - (intersection / (union + eps))
-
 def calculate_iou_per_class(pred_mask, true_mask, num_classes):
     """
     Вычисляет IoU для каждого класса.
@@ -56,12 +44,6 @@ def calculate_iou_per_class(pred_mask, true_mask, num_classes):
         
     return iou_list
 
-# def calculate_iou(self, y_true, y_pred):
-#         intersection = np.logical_and(y_true, y_pred).sum(axis=1)
-#         union = np.logical_or(y_true, y_pred).sum(axis=1)
-#         iou = intersection / union
-#         return np.mean(iou)
-
 def calculate_mean_iou(pred_mask, true_mask, num_classes):
     """
     Вычисляет среднее значение IoU для всех классов.
@@ -69,7 +51,6 @@ def calculate_mean_iou(pred_mask, true_mask, num_classes):
     iou_per_class = calculate_iou_per_class(pred_mask, true_mask, num_classes)
     mean_iou = np.mean(iou_per_class)
     return mean_iou, iou_per_class
-
 
 def train_model(video_meta_file, categories_file, tensor_dir, max_depth = 10):
     
@@ -121,13 +102,13 @@ def train_model(video_meta_file, categories_file, tensor_dir, max_depth = 10):
     # y_pred = tree.model.predict(X_test)
     
 
-    # MultiOutputClassifier
+    # Модель MultiOutputClassifier(DecisionTreeClassifier)
     # multi_target_clf = MultiOutputClassifier(tree.model, n_jobs=-1)
     # multi_target_clf.fit(X_train, y_train)
     # y_pred1 = multi_target_clf.predict(X_test)
     # y_pred = np.ones([X_test.shape[0], 29]) - y_pred
 
-    #Bagging model
+    # Модель Bagging model
     # bagging_model = BaggingClassifier(tree.model, n_estimators=10)
     # multi_target_clf = MultiOutputClassifier(bagging_model, n_jobs=-1)
     # multi_target_clf.fit(X_train, y_train)
@@ -136,22 +117,22 @@ def train_model(video_meta_file, categories_file, tensor_dir, max_depth = 10):
     # y_pred = np.array(np.logical_or(y_pred1, y_pred2), dtype=float)
 
 
-    
-    # 
+    # Модель MultiOutputClassifier(XGBClassifier())
     # num_rounds = 100
     # xgb_model = xgb.XGBClassifier(objective='multi:softmax', num_class = 2, eta = 0.1, max_depth=5, eval_metric='mlogloss')
     # multi_target_model = MultiOutputClassifier(xgb_model, n_jobs=-1)
     # multi_target_model.fit(X_train, y_train)
     # y_pred = multi_target_model.predict(X_test)
-
     # model = xgb.train(params, dtrain, num_rounds)
 
     # Предсказание классов
     # y_pred = model.predict(dtest)
+
     # #Метрика iou
     # iou = calculate_mean_iou(y_test, y_pred, len(y_test))
     # print("IOU")
     # print(iou)
+
     # # Выводим предсказания
     # print(y_pred[5])
     # print(y_pred[0])
