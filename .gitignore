@@ -9,3 +9,4 @@ temp*.ipynb
 */wandb
 */Video-tagging
 */lightning_logs
+wandb/

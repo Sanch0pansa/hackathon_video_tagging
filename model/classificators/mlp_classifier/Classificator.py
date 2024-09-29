@@ -114,7 +114,7 @@ class MultiTaskClassifier(pl.LightningModule):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
+        x, y, _ = batch
 
         # Forward pass
         logits = self(x)
@@ -138,7 +138,7 @@ class MultiTaskClassifier(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, y = batch
+        x, y, _ = batch
 
         # Forward pass
         logits = self(x)
