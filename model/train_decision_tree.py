@@ -4,9 +4,10 @@ import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import BaggingClassifier
-from classificators.decision_tree_classifier import DataModule, Classificator, RandForest
+from classificators.decision_tree_classifier import DataModule, Classificator
 from classificators.decision_tree_classifier.DataModule import VideoDataModule
 from sklearn.multioutput import MultiOutputClassifier
+import joblib
 
 import xgboost as xgb
 
@@ -40,6 +41,9 @@ def calculate_iou_per_class(pred_mask, true_mask, num_classes):
         pred_cls = (pred_mask == cls).astype(np.uint8)
         true_cls = (true_mask == cls).astype(np.uint8)
         
+        intersection = np.logical_and(true_cls, pred_cls).sum(axis=1)
+        union = np.logical_or(true_cls, pred_cls).sum(axis=1)
+        iou = intersection / union
         # Область пересечения
         intersection = np.sum(pred_cls * true_cls)
         
@@ -52,6 +56,12 @@ def calculate_iou_per_class(pred_mask, true_mask, num_classes):
         
     return iou_list
 
+# def calculate_iou(self, y_true, y_pred):
+#         intersection = np.logical_and(y_true, y_pred).sum(axis=1)
+#         union = np.logical_or(y_true, y_pred).sum(axis=1)
+#         iou = intersection / union
+#         return np.mean(iou)
+
 def calculate_mean_iou(pred_mask, true_mask, num_classes):
     """
     Вычисляет среднее значение IoU для всех классов.
@@ -62,14 +72,6 @@ def calculate_mean_iou(pred_mask, true_mask, num_classes):
 
 
 def train_model(video_meta_file, categories_file, tensor_dir, max_depth = 10):
-    # Инициализация логгера Wandb
-
-    # data = pd.read_csv(video_meta_file)
-    # categoric_data = pd.read_csv(categories_file)
-    # embeddings = torch.load(tensor_dir + '/' + data['video_id'][2] + ".pt")
-    # print(embeddings.shape)
-    # ides = data['video_id']
-    # print(ides)
     
     data_module = VideoDataModule(
         video_meta_file=video_meta_file,
@@ -97,6 +99,7 @@ def train_model(video_meta_file, categories_file, tensor_dir, max_depth = 10):
     y = np.array(y)
     print(y[3])
 
+    # Попытка паддинга
     # max_len = max(len(seq) for seq in X)
     # X_padded = np.array([np.pad(seq, (0, max_len - len(seq))) for seq in X])
     # print(X['emb'].shape)
@@ -111,7 +114,8 @@ def train_model(video_meta_file, categories_file, tensor_dir, max_depth = 10):
     # y_pred = model.predict(X_test)
 
     # Создаем модель DecisionTree
-    tree = RandForest.DecisionTree(max_depth=max_depth)
+    tree = Classificator.DecisionTree(max_depth=max_depth)
+
     # # tree.find_best_depth(X_train, y_train, len(y_train))
     # tree.model.fit(X_train, y_train, tree.max_depth)
     # y_pred = tree.model.predict(X_test)
@@ -120,56 +124,38 @@ def train_model(video_meta_file, categories_file, tensor_dir, max_depth = 10):
     # MultiOutputClassifier
     # multi_target_clf = MultiOutputClassifier(tree.model, n_jobs=-1)
     # multi_target_clf.fit(X_train, y_train)
-    # y_pred = multi_target_clf.predict(X_test)
+    # y_pred1 = multi_target_clf.predict(X_test)
+    # y_pred = np.ones([X_test.shape[0], 29]) - y_pred
 
+    #Bagging model
     # bagging_model = BaggingClassifier(tree.model, n_estimators=10)
-
     # multi_target_clf = MultiOutputClassifier(bagging_model, n_jobs=-1)
     # multi_target_clf.fit(X_train, y_train)
-    # y_pred = multi_target_clf.predict(X_test)
+    # y_pred2 = multi_target_clf.predict(X_test)
 
-    dtrain = xgb.DMatrix(X_train, label=y_train)
-    dtest = xgb.DMatrix(X_test)
+    # y_pred = np.array(np.logical_or(y_pred1, y_pred2), dtype=float)
 
-    # Задание параметров
-    params = {
-    'objective': 'multi:softmax',  # Используйте 'multi:softmax' для предсказания классов
-    'num_class': len(data_module.dataset.category_to_idx2),                # Количество классов
-    'eta': 0.1,                    # Скорость обучения
-    'max_depth': 10,                # Максимальная глубина дерева
-    'eval_metric': 'mlogloss',     # Метрика для оценки
-    }
 
-    num_rounds = 100
-    xgb_model = xgb.XGBClassifier(objective='multi:softmax', num_class = 2, eta = 0.1, max_depth=5, eval_metric='mlogloss')
-    multi_target_model = MultiOutputClassifier(xgb_model, n_jobs=-1)
-    multi_target_model.fit(X_train, y_train)
-    y_pred = multi_target_model.predict(X_test)
+    
+    # 
+    # num_rounds = 100
+    # xgb_model = xgb.XGBClassifier(objective='multi:softmax', num_class = 2, eta = 0.1, max_depth=5, eval_metric='mlogloss')
+    # multi_target_model = MultiOutputClassifier(xgb_model, n_jobs=-1)
+    # multi_target_model.fit(X_train, y_train)
+    # y_pred = multi_target_model.predict(X_test)
 
     # model = xgb.train(params, dtrain, num_rounds)
 
     # Предсказание классов
     # y_pred = model.predict(dtest)
     # #Метрика iou
-    iou = calculate_mean_iou(y_test, y_pred, len(y_test))
-    print("IOU")
-    print(iou)
+    # iou = calculate_mean_iou(y_test, y_pred, len(y_test))
+    # print("IOU")
+    # print(iou)
     # # Выводим предсказания
-    print(y_pred[5])
+    # print(y_pred[5])
     # print(y_pred[0])
     # print(y_pred.shape)
-
-    # tree.find_best_depth(max_depth_range=range(4, max_depth))
-
-    
-    # Определяем Trainer
-    # trainer = pl.Trainer(
-    #     accelerator="auto",
-    #     devices=1
-    # )
-    
-    # Запуск обучения
-    # trainer.fit(tree.model, data_module)
 
 if __name__ == "__main__":
     train_model(

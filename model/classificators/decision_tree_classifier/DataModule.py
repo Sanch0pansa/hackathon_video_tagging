@@ -35,7 +35,7 @@ class VideoDataset(Dataset):
         self.category_to_idx1 = {cat: idx for idx, cat in enumerate(self.categories_df['Уровень 1 (iab)'])}
         self.category_to_idx2 = {cat: idx for idx, cat in enumerate(self.category_to_idx1)}
 
-        self.num_classes = len(self.category_to_idx2-1)
+        self.num_classes = len(self.category_to_idx2)-1
 
     def __len__(self):
         return len(self.video_meta_df)
