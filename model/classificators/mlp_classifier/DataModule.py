@@ -1,8 +1,9 @@
 import lightning as pl
 import torch
-from torch.utils.data import DataLoader, Dataset, random_split
+from torch.utils.data import DataLoader, Dataset, random_split, WeightedRandomSampler
 import pandas as pd
 import os
+from collections import Counter
 
 class VideoDataset(Dataset):
     def __init__(self, video_meta_df, categories_df, tensor_dir):
@@ -29,6 +30,28 @@ class VideoDataset(Dataset):
         self.category_to_idx = {cat: idx for idx, cat in enumerate(self.categories_df['full_category'])}
         self.num_classes = len(self.category_to_idx)
 
+        # Создаем список для хранения меток классов для каждого экземпляра
+        self.labels_list = []
+        for idx in range(len(self.video_meta_df)):
+            video_info = self.video_meta_df.iloc[idx]
+            tags = (str(video_info['tags']) if str(video_info['tags']) != "nan" else "").split(', ')
+            labels = torch.zeros(self.num_classes, dtype=torch.float32)  # Use float32
+            for tag in tags:
+                tag = tag.strip()
+                if tag in self.category_to_idx:
+                    labels[self.category_to_idx[tag]] = 1
+            self.labels_list.append(labels)
+
+        # Подсчитываем количество экземпляров для каждого класса
+        self.class_counts = Counter(torch.argmax(torch.stack(self.labels_list), dim=1).tolist())
+        
+        # Вычисляем веса для каждого экземпляра
+        total_samples = len(self.video_meta_df)
+        self.weights = torch.tensor(
+            [total_samples / (len(self.class_counts) * self.class_counts[cls]) for cls in torch.argmax(torch.stack(self.labels_list), dim=1).tolist()],
+            dtype=torch.float32  # Use float32
+        )
+
     def __len__(self):
         return len(self.video_meta_df)
 
@@ -37,16 +60,10 @@ class VideoDataset(Dataset):
         video_id = video_info['video_id']
         tensor_path = os.path.join(self.tensor_dir, f"{video_id}.pt")
         tensor = torch.load(tensor_path, weights_only=True)
-        tensor = tensor.view(tensor.shape[1])
+        tensor = tensor.view(tensor.shape[1]).float()  # Ensure tensor is float32
 
         # Размечаем метки для мультиклассовой классификации
-        tags = (str(video_info['tags']) if str(video_info['tags']) != "nan" else "").split(', ')
-        labels = torch.zeros(self.num_classes)
-        for tag in tags:
-            tag = tag.strip()
-            if tag in self.category_to_idx:
-                labels[self.category_to_idx[tag]] = 1
-        return tensor, labels
+        return tensor, self.labels_list[idx], self.weights[idx]
 
 class VideoDataModule(pl.LightningDataModule):
     def __init__(self, video_meta_file, categories_file, tensor_dir, batch_size=32, num_workers=4, train_val_test_split=(0.7, 0.15, 0.15)):
@@ -79,7 +96,11 @@ class VideoDataModule(pl.LightningDataModule):
         )
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
+        # Создаем WeightedRandomSampler
+        class_weights = [self.dataset.weights[idx] for idx in range(len(self.train_dataset))]
+        sampler = WeightedRandomSampler(weights=class_weights, num_samples=len(class_weights), replacement=True)
+        
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, sampler=sampler)
 
     def val_dataloader(self):
         return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
@@ -87,8 +108,7 @@ class VideoDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
-
-if __name__ ==  '__main__':
+if __name__ == '__main__':
     video_meta_df = pd.read_csv('./train_dataset_tag_video/baseline/train_data_categories.csv')
     categories_df = pd.read_csv('./train_dataset_tag_video/baseline/IAB_tags.csv')
     dataset = VideoDataset(video_meta_df, categories_df, 'embeddings_1536')
