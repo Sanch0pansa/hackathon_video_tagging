@@ -4,6 +4,7 @@ import torch
 from model.extractors.Extractor import Extractor
 from model.classificators.mlp_classifier.Classificator import MultiTaskClassifier
 from model.classificators.mlp_classifier.DataModule import VideoDataset
+from model.train_mlp_classifier import train_model
 import pandas as pd
 from tqdm import tqdm
 import time
@@ -188,6 +189,12 @@ MODEL_PATH = "./model/checkpoints/final_model.ckpt"    # Path to the trained mod
 MODEL_INPUT_SIZE = 1536                          # Input size of the model
 TAGS_TABLE_PATH = "./model/config/tags.csv"            # Path to the tags table
 
+DEFAULT_BATCH_SIZE = 16                          # Default batch size for training
+DEFAULT_LEARNING_RATE = 0.001                    # Default learning rate for training
+DEFAULT_NUM_EPOCHS = 20                          # Default number of epochs for training
+DEFAULT_WANDB_RUN_NAME = "mlp-classifier-1"      # Default wandb run name
+DEFAULT_HIDDEN_LAYER_SIZE = 256                  # Default size of the hidden layer in the model
+
 # Command 1: Extract features from a single video
 @click.command(name="extract-features")
 @click.argument('video_path', type=click.Path(exists=True, dir_okay=False))
@@ -285,11 +292,56 @@ def run_inference_dir(features_dir, save_dir):
     inference_all(features_dir, save_dir)
 
 
+
+# Command 6: Train a model using feature files
+@click.command(name="train")
+@click.argument('features_dir', type=click.Path(exists=True, file_okay=False))
+@click.argument('data_table_path', type=click.Path(exists=True, dir_okay=False))
+@click.argument('model_save_path', type=click.Path(), default=None)
+@click.option('--batch-size', '-b', type=int, default=DEFAULT_BATCH_SIZE, 
+              help=f"Batch size for training. Default is {DEFAULT_BATCH_SIZE}.")
+@click.option('--learning-rate', '-lr', type=float, default=DEFAULT_LEARNING_RATE, 
+              help=f"Learning rate for training. Default is {DEFAULT_LEARNING_RATE}.")
+@click.option('--epochs', '-e', type=int, default=DEFAULT_NUM_EPOCHS, 
+              help=f"Number of epochs for training. Default is {DEFAULT_NUM_EPOCHS}.")
+@click.option('--wandb-run-name', '-r', type=str, default=DEFAULT_WANDB_RUN_NAME, 
+              help=f"WandB run name for tracking experiments. Default is {DEFAULT_WANDB_RUN_NAME}.")
+@click.option('--hidden-size', '-hs', type=int, default=DEFAULT_HIDDEN_LAYER_SIZE, 
+              help=f"Size of the hidden layer in the model. Default is {DEFAULT_HIDDEN_LAYER_SIZE}.")
+def train(features_dir, data_table_path, model_save_path, batch_size, learning_rate, epochs, wandb_run_name, hidden_size):
+    """
+    Train a model using feature files.
+    Arguments:
+        features_dir: Path to the directory containing feature files.
+        data_table_path: Path to the CSV table containing video metadata (e.g., titles, descriptions).
+        model_save_path: Path to save the trained model.
+    Options:
+        batch-size: Batch size for training.
+        learning-rate: Learning rate for training.
+        epochs: Number of training epochs.
+        wandb-run-name: WandB run name for logging and tracking experiments.
+        hidden-size: Size of the hidden layer in the model.
+    """
+    train_model(
+        video_meta_file=data_table_path,
+        categories_file="./model/config/tags.csv",
+        tensor_dir=features_dir,
+        batch_size=batch_size,
+        max_epochs=epochs,
+        hidden_layer_size=hidden_size,
+        checkpoints_dir="./model/checkpoints",
+        run_name=wandb_run_name,
+        model_save_path=model_save_path,
+        learning_rate=learning_rate
+    )
+
+
+
 # CLI entry point
 @click.group()
 def cli():
     """
-    Command-line interface for video feature extraction and inference.
+    Command-line interface for video feature extraction, inference, and training.
     """
     pass
 
@@ -300,6 +352,7 @@ cli.add_command(run_inference)
 cli.add_command(full_inference)
 cli.add_command(extract_features_dir)
 cli.add_command(run_inference_dir)
+cli.add_command(train)  # Adding the new train command
 
 if __name__ == "__main__":
     cli()
